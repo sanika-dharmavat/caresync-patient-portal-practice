@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital AI System</title>
+  <style>
+    /* Basic styling for the page */
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #1a237e; }
+    h2 { color: #283593; }
+    select, button { padding: 10px 15px; margin: 5px; font-size: 16px; cursor: pointer; }
+    button { background-color: #1a237e; color: white; border: none; border-radius: 4px; }
+    button:hover { background-color: #283593; }
+    .result-box { border: 1px solid #ccc; padding: 15px; margin-top: 10px; border-radius: 4px; }
+    /* AI Agent badge styling */
+    .agent-badge {
+      display: inline-block;
+      background-color: #ff6f00;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .agent-result { background-color: #fff8e1; border-left: 4px solid #ff6f00; padding: 10px; }
+    .ward-select { padding: 8px; font-size: 15px; margin: 5px; }
+    #triage-result { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+ 
+  <h1>Hospital AI System</h1>
+ 
+  <!-- ===================== -->
+  <!-- SECTION 1: Triage (from Day 10) -->
+  <!-- ===================== -->
+  <h2>Patient Triage</h2>
+  <label>Select Patient:</label>
+  <select id="patient-select">
+    <option value="">-- Loading patients... --</option>
+  </select>
+  <button onclick="runTriage()">Run AI Triage</button>
+  <div class="result-box" id="triage-result">Triage result will appear here.</div>
+ 
+  <!-- ===================== -->
+  <!-- SECTION 2: Bed Agent (New in Day 11) -->
+  <!-- ===================== -->
+  <h2>Bed Availability - AI Agent</h2>
+  <p>Select a patient and a ward. The AI Agent will find an empty bed and assign it.</p>
+ 
+  <label>Patient:</label>
+  <select id="agent-patient-select">
+    <option value="">-- Select patient --</option>
+  </select>
+ 
+  <label>Ward:</label>
+  <select id="ward-select" class="ward-select">
+    <option value="General">General</option>
+    <option value="Emergency">Emergency</option>
+    <option value="ICU">ICU</option>
+    <option value="Pediatric">Pediatric</option>
+    <option value="Maternity">Maternity</option>
+  </select>
+ 
+  <button onclick="runBedAgent()">Assign Bed with AI Agent</button>
+ 
+  <!-- Result box for AI agent -->
+  <div class="result-box" id="agent-result">
+    Agent result will appear here after you click the button.
+  </div>
+  <!-- ===================== -->
+<!-- SECTION 3: AUTO DISCHARGE -->
+<!-- ===================== -->
+
+<h2>Auto Discharge - AI Agent</h2>
+
+<p>
+  Select a patient and click Auto Discharge.
+  The AI Agent will discharge the patient and release the assigned bed.
+</p>
+
+<label>Patient:</label>
+
+<select id="discharge-patient-select">
+  <option value="">-- Select patient --</option>
+</select>
+
+<button onclick="runAutoDischarge()">
+  Auto Discharge
+</button>
+
+<div class="result-box" id="discharge-result">
+  Discharge result will appear here after you click the button.
+</div>
+<!-- ===================== -->
+<!-- SECTION 4: DISCHARGE SUMMARY -->
+<!-- ===================== -->
+
+<h2>Discharge Summary</h2>
+
+<p>
+  Select a patient and click the button to view the discharge summary.
+</p>
+
+<label>Patient:</label>
+
+<select id="summary-patient-select">
+  <option value="">-- Select patient --</option>
+</select>
+
+<button onclick="viewDischargeSummary()">
+  View Discharge Summary
+</button>
+
+<div class="result-box" id="summary-result">
+  Discharge summary will appear here.
+</div>
+ 
+  <script>
+
+async function loadPatients() {
+
+  const response = await fetch("/patients");
+  const patients = await response.json();
+
+  const select1 = document.getElementById("patient-select");
+  const select2 = document.getElementById("agent-patient-select");
+  const select3 = document.getElementById("discharge-patient-select");
+  const select4 = document.getElementById("summary-patient-select");
+
+  patients.forEach(patient => {
+
+    select1.add(
+      new Option(`${patient.id} - ${patient.name}`, patient.id)
+    );
+
+    select2.add(
+      new Option(`${patient.id} - ${patient.name}`, patient.id)
+    );
+
+    select3.add(
+      new Option(`${patient.id} - ${patient.name}`, patient.id)
+    );
+
+    select4.add(
+      new Option(`${patient.id} - ${patient.name}`, patient.id)
+    );
+
+  });
+}
+
+
+// =============================
+// PATIENT TRIAGE
+// =============================
+
+async function runTriage() {
+
+  const patientId =
+    document.getElementById("patient-select").value;
+
+  if (!patientId) {
+    alert("Please select a patient first.");
+    return;
+  }
+
+  const resultDiv =
+    document.getElementById("triage-result");
+
+  resultDiv.textContent =
+    "Running AI triage, please wait...";
+
+  try {
+
+    const response =
+      await fetch(`/triage/${patientId}`, {
+        method: "POST"
+      });
+
+    const data = await response.json();
+
+    if (data.result) {
+
+      const r = data.result;
+
+      resultDiv.innerHTML = `
+        Patient ID: ${r.patient_id}<br>
+        Patient Name: ${r.patient_name}<br>
+        Age: ${r.age}<br>
+        Gender: ${r.gender}<br>
+        Symptoms: ${r.symptoms}<br><br>
+
+        <b>AI Response:</b><br>
+        ${r.ai_response
+          .replace(/\\n/g, "<br>")
+          .replace(/\*\*/g, "")
+        }
+      `;
+
+    } else {
+
+      resultDiv.textContent =
+        "Error: " + JSON.stringify(data);
+
+    }
+
+  } catch (err) {
+
+    resultDiv.textContent =
+      "Error: " + err.message;
+  }
+}
+
+
+// =============================
+// BED AI AGENT
+// =============================
+
+async function runBedAgent() {
+
+  const patientId =
+    document.getElementById("agent-patient-select").value;
+
+  const ward =
+    document.getElementById("ward-select").value;
+
+  if (!patientId) {
+    alert("Please select a patient first.");
+    return;
+  }
+
+  const resultDiv =
+    document.getElementById("agent-result");
+
+  resultDiv.innerHTML =
+    "AI Agent is running... Please wait.";
+
+  try {
+
+    const response =
+      await fetch("/agent/assign_bed", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          patient_id: parseInt(patientId),
+          ward: ward
+        })
+
+      });
+
+    const data = await response.json();
+
+    resultDiv.innerHTML = `
+      <span class="agent-badge">
+        DATA FROM AI AGENT
+      </span>
+
+      <div class="agent-result">
+        ${data.result || JSON.stringify(data)}
+      </div>
+    `;
+
+  } catch (err) {
+
+    resultDiv.innerHTML =
+      "Error: " + err.message;
+
+  }
+}
+
+
+// =============================
+// AUTO DISCHARGE
+// =============================
+
+async function runAutoDischarge() {
+
+  const patientId =
+    document.getElementById("discharge-patient-select").value;
+
+  if (!patientId) {
+    alert("Please select a patient first.");
+    return;
+  }
+
+  const resultDiv =
+    document.getElementById("discharge-result");
+
+  resultDiv.innerHTML =
+    "AI Agent is processing discharge... Please wait.";
+
+  try {
+
+    const response =
+      await fetch("/agent/auto_discharge", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+          patient_id: parseInt(patientId)
+        })
+
+      });
+
+    const data = await response.json();
+
+    if (data.result) {
+
+      resultDiv.innerHTML = `
+        <span class="agent-badge">
+          DATA FROM AI AGENT
+        </span>
+
+        <div class="agent-result">
+
+          <strong>✓ Discharge Completed</strong>
+
+          <br><br>
+
+          ${data.result
+            .replace(/\n/g, "<br>")
+            .replace(/\*\*/g, "")
+          }
+
+        </div>
+      `;
+
+    } else {
+
+      resultDiv.innerHTML =
+        "Error: " + JSON.stringify(data);
+
+    }
+
+  } catch (err) {
+
+    resultDiv.innerHTML =
+      "Error: " + err.message;
+
+  }
+}
+
+
+// =============================
+// DISCHARGE SUMMARY
+// =============================
+
+async function viewDischargeSummary() {
+
+  const patientId =
+    document.getElementById("summary-patient-select").value;
+
+  if (!patientId) {
+    alert("Please select a patient first.");
+    return;
+  }
+
+  const resultDiv =
+    document.getElementById("summary-result");
+
+  resultDiv.innerHTML =
+    "Loading discharge summary...";
+
+  try {
+
+    const response =
+      await fetch(`/discharge-summary/${patientId}`);
+
+    const data = await response.json();
+
+    if (data.summary) {
+
+      const s = data.summary;
+
+      resultDiv.innerHTML = `
+
+        <h3>DISCHARGE SUMMARY</h3>
+
+        <hr>
+
+        <b>Patient ID:</b>
+        ${s.patient_id}<br>
+
+        <b>Patient Name:</b>
+        ${s.patient_name}<br>
+
+        <b>Age:</b>
+        ${s.age}<br>
+
+        <b>Gender:</b>
+        ${s.gender}<br>
+
+        <br>
+
+        <b>Admission Date:</b>
+        ${s.admission_date || "N/A"}<br>
+
+        <b>Discharge Date:</b>
+        ${s.discharge_date || "N/A"}<br>
+
+        <br>
+
+        <b>Ward:</b>
+        ${s.ward || "N/A"}<br>
+
+        <b>Bed:</b>
+        ${s.bed || "N/A"}<br>
+
+        <br>
+
+        <b>Diagnosis:</b><br>
+        ${s.diagnosis || "N/A"}
+
+        <br><br>
+
+        <b>Treatment:</b><br>
+        ${s.treatment || "N/A"}
+
+        <br><br>
+
+        <b>Medicines:</b><br>
+        ${s.medicines || "N/A"}
+
+        <br><br>
+
+        <b>Doctor:</b>
+        ${s.doctor || "N/A"}
+
+        <br><br>
+
+        <b>Discharge Status:</b>
+        ${s.status || "Discharged"}
+
+        <br><br>
+
+        <hr>
+
+        <b>Final Summary:</b><br>
+        ${s.final_summary || "N/A"}
+
+      `;
+
+    } else {
+
+      resultDiv.innerHTML =
+        "No discharge summary found for this patient.";
+
+    }
+
+  } catch (err) {
+
+    resultDiv.innerHTML =
+      "Error: " + err.message;
+
+  }
+}
+
+
+// =============================
+// LOAD PATIENTS
+// =============================
+
+loadPatients();
+
+</script>
+ 
+</body>
+</html>
+

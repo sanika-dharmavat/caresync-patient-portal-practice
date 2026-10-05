@@ -1,0 +1,9 @@
+department,total_discharges,readmissions,avg_length_of_stay,readmission_rate_pct
+Emergency,282,103,11.0,36.5
+Cardiology,588,182,10.9,31.0
+Neurology,305,43,10.7,14.1
+General Medicine,296,30,11.0,10.1
+Oncology,280,27,10.7,9.6
+Pediatrics,277,16,10.6,5.8
+Orthopedics,586,32,11.0,5.5
+Gynecology,302,14,10.8,4.6

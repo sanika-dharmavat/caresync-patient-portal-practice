@@ -1,0 +1,6 @@
+insurance_company,total_claims,rejected_claims,total_billed,avg_bill,rejection_rate_pct
+Nationalinsurance,938,315,72956245,77779,33.6
+Unitedhealthindia,943,237,72578472,76966,25.1
+Bajajallianz,964,120,77348041,80237,12.4
+Hdfcergo,1058,113,80725231,76300,10.7
+Starhealth,1005,70,78351321,77962,7.0
